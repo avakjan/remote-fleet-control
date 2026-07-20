@@ -1,0 +1,23 @@
+{
+  "name": "remote-fleet-control",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Remote fleet control coding challenge",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @fleet/api && npm run build --workspace @fleet/web",
+    "dev": "concurrently -n api,web -c blue,green \"npm run start:dev --workspace @fleet/api\" \"npm run dev --workspace @fleet/web\"",
+    "lint": "npm run lint --workspace @fleet/api && npm run lint --workspace @fleet/web",
+    "test": "npm run test --workspace @fleet/api",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md,yml,yaml,css}\""
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "concurrently": "latest",
+    "prettier": "latest"
+  }
+}
