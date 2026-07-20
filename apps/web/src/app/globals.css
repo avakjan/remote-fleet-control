@@ -1,12 +1,57 @@
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f2f5f9;
+  --surface: #fbfcfe;
+  --surface-raised: #f6f8fc;
+  --text: #172033;
+  --text-muted: #627087;
+  --text-subtle: #7c899d;
+  --border: #dfe5ee;
+  --border-strong: #cbd4e1;
+  --accent: #2854c6;
+  --accent-hover: #1f46ad;
+  --accent-text: #f8faff;
+  --online: #2b7c56;
+  --online-soft: #dceee5;
+  --online-text: #226947;
+  --offline-text: #6e7889;
+  --success-surface: #eaf6ef;
+  --success-border: #b9ddc8;
+  --success-text: #205f40;
+  --error-surface: #fceeee;
+  --error-border: #efc4c4;
+  --error-text: #9b3030;
+  --skeleton: #e5eaf1;
+  --skeleton-highlight: rgb(255 255 255 / 0.6);
+  --shadow: 0 14px 40px rgb(32 49 74 / 0.07);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    color-scheme: dark;
+    --background: #0f141d;
+    --surface: #171e29;
+    --surface-raised: #1c2431;
+    --text: #edf1f7;
+    --text-muted: #a6b0bf;
+    --text-subtle: #818da0;
+    --border: #293343;
+    --border-strong: #3a4658;
+    --accent: #7598f5;
+    --accent-hover: #8aa8fa;
+    --accent-text: #111827;
+    --online: #61ba8b;
+    --online-soft: #203f31;
+    --online-text: #76c99c;
+    --offline-text: #a3adbc;
+    --success-surface: #173429;
+    --success-border: #2d6147;
+    --success-text: #8ad1aa;
+    --error-surface: #3a2023;
+    --error-border: #693b40;
+    --error-text: #f1a0a8;
+    --skeleton: #232d3b;
+    --skeleton-highlight: rgb(255 255 255 / 0.06);
+    --shadow: 0 18px 48px rgb(3 8 15 / 0.28);
   }
 }
 
@@ -24,9 +69,9 @@ body {
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  color: var(--foreground);
+  color: var(--text);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -42,8 +87,17 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
 }
