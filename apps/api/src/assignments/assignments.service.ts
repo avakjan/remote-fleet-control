@@ -38,7 +38,7 @@ export class AssignmentsService {
             assignedOperatorId: { $exists: false },
           },
           { $set: { assignedOperatorId: operator._id } },
-          { new: true },
+          { returnDocument: 'after' },
         )
         .exec();
 
@@ -79,7 +79,7 @@ export class AssignmentsService {
       .findOneAndUpdate(
         { _id: id, assignedOperatorId: operator._id },
         { $unset: { assignedOperatorId: '' } },
-        { new: true },
+        { returnDocument: 'after' },
       )
       .exec();
 

@@ -75,7 +75,7 @@ describe('AssignmentsService', () => {
         assignedOperatorId: { $exists: false },
       },
       { $set: { assignedOperatorId: operatorId } },
-      { new: true },
+      { returnDocument: 'after' },
     );
   });
 
@@ -118,7 +118,7 @@ describe('AssignmentsService', () => {
     expect(vehicleModel.findOneAndUpdate).toHaveBeenCalledWith(
       { _id: vehicleId, assignedOperatorId: operatorId },
       { $unset: { assignedOperatorId: '' } },
-      { new: true },
+      { returnDocument: 'after' },
     );
   });
 });

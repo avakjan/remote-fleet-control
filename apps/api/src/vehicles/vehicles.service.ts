@@ -59,7 +59,11 @@ export class VehiclesService {
       }
 
       const vehicle = await this.vehicleModel
-        .findByIdAndUpdate(vehicleId, { $set: dto }, { new: true })
+        .findByIdAndUpdate(
+          vehicleId,
+          { $set: dto },
+          { returnDocument: 'after' },
+        )
         .exec();
 
       if (!vehicle) {
@@ -104,7 +108,7 @@ export class VehiclesService {
       .findOneAndUpdate(
         { _id: id, assignedOperatorId: { $exists: false } },
         { $set: dto },
-        { new: true },
+        { returnDocument: 'after' },
       )
       .exec();
 
