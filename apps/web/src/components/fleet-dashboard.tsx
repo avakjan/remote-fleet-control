@@ -2,8 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  getOperators,
   getVehicles,
+  releaseVehicle,
   setVehicleOnlineStatus,
+  takeoverVehicle,
+  type Operator,
   type Vehicle,
 } from "@/lib/api";
 import styles from "@/app/page.module.css";
@@ -13,19 +17,35 @@ type Notice = {
   text: string;
 };
 
+type PendingAction = {
+  vehicleId: string;
+  kind: "status" | "takeover" | "release";
+};
+
 export function FleetDashboard() {
   const [vehicles, setVehicles] = useState<Vehicle[] | null>(null);
+  const [operators, setOperators] = useState<Operator[] | null>(null);
+  const [selectedOperatorId, setSelectedOperatorId] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [pendingVehicleId, setPendingVehicleId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(
+    null,
+  );
   const [notice, setNotice] = useState<Notice | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
 
-    void getVehicles(controller.signal)
-      .then((data) => {
-        setVehicles(data);
+    void Promise.all([
+      getVehicles(controller.signal),
+      getOperators(controller.signal),
+    ])
+      .then(([vehicleData, operatorData]) => {
+        setVehicles(vehicleData);
+        setOperators(operatorData);
+        setSelectedOperatorId(
+          (current) => current || operatorData[0]?.id || "",
+        );
         setLoadError(null);
       })
       .catch((error: unknown) => {
@@ -47,13 +67,30 @@ export function FleetDashboard() {
     };
   }, [vehicles]);
 
+  const selectedOperator = operators?.find(
+    (operator) => operator.id === selectedOperatorId,
+  );
+  const selectedAssignment = vehicles?.find(
+    (vehicle) => vehicle.assignedOperatorId === selectedOperatorId,
+  );
+
   async function refresh() {
     setRefreshing(true);
     setNotice(null);
     setLoadError(null);
 
     try {
-      setVehicles(await getVehicles());
+      const [vehicleData, operatorData] = await Promise.all([
+        getVehicles(),
+        getOperators(),
+      ]);
+      setVehicles(vehicleData);
+      setOperators(operatorData);
+      setSelectedOperatorId((current) =>
+        operatorData.some((operator) => operator.id === current)
+          ? current
+          : operatorData[0]?.id || "",
+      );
     } catch (error) {
       setLoadError(errorMessage(error));
     } finally {
@@ -63,16 +100,12 @@ export function FleetDashboard() {
 
   async function toggleStatus(vehicle: Vehicle) {
     const nextStatus = !vehicle.isOnline;
-    setPendingVehicleId(vehicle.id);
+    setPendingAction({ vehicleId: vehicle.id, kind: "status" });
     setNotice(null);
 
     try {
       const updated = await setVehicleOnlineStatus(vehicle.id, nextStatus);
-      setVehicles((current) =>
-        current?.map((item) => (item.id === updated.id ? updated : item)) ?? [
-          updated,
-        ],
-      );
+      replaceVehicle(updated);
       setNotice({
         tone: "success",
         text: `${vehicle.code} is now ${nextStatus ? "online" : "offline"}.`,
@@ -86,29 +119,125 @@ export function FleetDashboard() {
             : "The vehicle status could not be changed.",
       });
     } finally {
-      setPendingVehicleId(null);
+      setPendingAction(null);
     }
   }
 
-  if (vehicles === null && loadError) {
+  async function changeAssignment(vehicle: Vehicle) {
+    if (!selectedOperator) {
+      setNotice({
+        tone: "error",
+        text: "Select an operator before changing an assignment.",
+      });
+      return;
+    }
+
+    const releasing = vehicle.assignedOperatorId === selectedOperator.id;
+    setPendingAction({
+      vehicleId: vehicle.id,
+      kind: releasing ? "release" : "takeover",
+    });
+    setNotice(null);
+
+    try {
+      const updated = releasing
+        ? await releaseVehicle(vehicle.id, selectedOperator.id)
+        : await takeoverVehicle(vehicle.id, selectedOperator.id);
+      replaceVehicle(updated);
+      setNotice({
+        tone: "success",
+        text: releasing
+          ? `${selectedOperator.name} released ${vehicle.code}.`
+          : `${selectedOperator.name} took over ${vehicle.code}.`,
+      });
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "The assignment could not be changed.",
+      });
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  function replaceVehicle(updated: Vehicle) {
+    setVehicles(
+      (current) =>
+        current?.map((item) => (item.id === updated.id ? updated : item)) ?? [
+          updated,
+        ],
+    );
+  }
+
+  if ((vehicles === null || operators === null) && loadError) {
     return (
       <section className={styles.statePanel} aria-labelledby="load-error-title">
         <p className={styles.stateLabel}>Connection issue</p>
         <h2 id="load-error-title">The fleet could not be loaded</h2>
         <p>{loadError}</p>
-        <button className={styles.primaryButton} type="button" onClick={refresh}>
+        <button
+          className={styles.primaryButton}
+          type="button"
+          onClick={refresh}
+        >
           Try again
         </button>
       </section>
     );
   }
 
-  if (vehicles === null) {
+  if (vehicles === null || operators === null) {
     return <FleetSkeleton />;
   }
 
   return (
     <>
+      <section className={styles.operatorPanel} aria-label="Active operator">
+        <div className={styles.operatorField}>
+          <label htmlFor="active-operator">Active operator</label>
+          <select
+            id="active-operator"
+            value={selectedOperatorId}
+            onChange={(event) => {
+              setSelectedOperatorId(event.target.value);
+              setNotice(null);
+            }}
+            disabled={operators.length === 0 || pendingAction !== null}
+          >
+            {operators.length === 0 ? (
+              <option value="">No operators available</option>
+            ) : null}
+            {operators.map((operator) => {
+              const assignment = vehicles.find(
+                (vehicle) => vehicle.assignedOperatorId === operator.id,
+              );
+              return (
+                <option value={operator.id} key={operator.id}>
+                  {operator.name} ({operator.employeeId})
+                  {assignment ? ` - ${assignment.code}` : ""}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+        <div className={styles.operatorContext}>
+          <span>Current assignment</span>
+          <strong>
+            {selectedAssignment
+              ? `${selectedAssignment.code} - ${selectedAssignment.name}`
+              : "No vehicle assigned"}
+          </strong>
+          <p>
+            {selectedAssignment
+              ? "Release this vehicle before taking over another one."
+              : "This operator can take over an online, available vehicle."}
+          </p>
+        </div>
+      </section>
+
       <section className={styles.summary} aria-label="Fleet summary">
         <SummaryItem label="Vehicles" value={totals.all} />
         <SummaryItem label="Online" value={totals.online} />
@@ -159,7 +288,46 @@ export function FleetDashboard() {
 
           <div className={styles.vehicleList}>
             {vehicles.map((vehicle) => {
-              const pending = pendingVehicleId === vehicle.id;
+              const pending = pendingAction?.vehicleId === vehicle.id;
+              const assignedOperator = operators.find(
+                (operator) => operator.id === vehicle.assignedOperatorId,
+              );
+              const ownedBySelected =
+                vehicle.assignedOperatorId === selectedOperatorId;
+              const assignedElsewhere =
+                Boolean(vehicle.assignedOperatorId) && !ownedBySelected;
+              const operatorBusy =
+                Boolean(selectedAssignment) &&
+                selectedAssignment?.id !== vehicle.id;
+              const assignmentDisabled =
+                pendingAction !== null ||
+                !selectedOperator ||
+                assignedElsewhere ||
+                (!ownedBySelected && (!vehicle.isOnline || operatorBusy));
+
+              let assignmentLabel = ownedBySelected ? "Release" : "Take over";
+              let assignmentReason: string | undefined;
+
+              if (pending && pendingAction?.kind !== "status") {
+                assignmentLabel =
+                  pendingAction?.kind === "release"
+                    ? "Releasing..."
+                    : "Taking over...";
+              } else if (!selectedOperator) {
+                assignmentLabel = "Select operator";
+              } else if (assignedElsewhere) {
+                assignmentLabel = "In use";
+                assignmentReason =
+                  "Select the assigned operator to release it.";
+              } else if (!ownedBySelected && !vehicle.isOnline) {
+                assignmentLabel = "Offline";
+                assignmentReason = "Only online vehicles can be taken over.";
+              } else if (operatorBusy) {
+                assignmentLabel = "Operator busy";
+                assignmentReason =
+                  "Release the operator's current vehicle first.";
+              }
+
               return (
                 <article className={styles.vehicleRow} key={vehicle.id}>
                   <div className={styles.vehicleIdentity}>
@@ -181,22 +349,38 @@ export function FleetDashboard() {
                     <div className={styles.statusItem}>
                       <span className={styles.statusCaption}>Assignment</span>
                       <span className={styles.assignmentValue}>
-                        {vehicle.assignedOperatorId ? "Assigned" : "Available"}
+                        {assignedOperator?.name ??
+                          (vehicle.assignedOperatorId
+                            ? "Assigned"
+                            : "Available")}
                       </span>
                     </div>
                   </div>
 
-                  <button
-                    className={styles.statusButton}
-                    type="button"
-                    disabled={pending}
-                    onClick={() => toggleStatus(vehicle)}
-                    aria-label={`Set ${vehicle.code} ${vehicle.isOnline ? "offline" : "online"}`}
-                  >
-                    {pending
-                      ? "Saving..."
-                      : `Set ${vehicle.isOnline ? "offline" : "online"}`}
-                  </button>
+                  <div className={styles.actionGroup}>
+                    <button
+                      className={styles.statusButton}
+                      type="button"
+                      disabled={pendingAction !== null}
+                      onClick={() => toggleStatus(vehicle)}
+                      aria-label={`Set ${vehicle.code} ${vehicle.isOnline ? "offline" : "online"}`}
+                    >
+                      {pending && pendingAction?.kind === "status"
+                        ? "Saving..."
+                        : `Set ${vehicle.isOnline ? "offline" : "online"}`}
+                    </button>
+                    <button
+                      className={styles.assignmentButton}
+                      data-action={ownedBySelected ? "release" : "takeover"}
+                      type="button"
+                      disabled={assignmentDisabled}
+                      onClick={() => changeAssignment(vehicle)}
+                      title={assignmentReason}
+                      aria-label={`${assignmentLabel} ${vehicle.code}`}
+                    >
+                      {assignmentLabel}
+                    </button>
+                  </div>
                 </article>
               );
             })}

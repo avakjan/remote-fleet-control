@@ -60,8 +60,9 @@ Startup performs idempotent upserts for three operators and four vehicles, so
 existing records and assignments are not reset. Operator IDs needed by the
 assignment endpoints are available from `GET /api/operators`.
 
-The frontend intentionally implements the required vehicle list and
-online/offline controls. Takeover and release remain API operations.
+The frontend includes the required vehicle list and online/offline controls.
+It also provides an active-operator selector with takeover and release actions,
+using the same assignment rules as the API.
 
 ## API
 

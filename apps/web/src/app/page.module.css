@@ -93,6 +93,72 @@
   line-height: 1.6;
 }
 
+.operatorPanel {
+  margin-bottom: 18px;
+  padding: 22px 24px;
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(280px, 1.2fr);
+  align-items: center;
+  gap: 32px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.operatorField {
+  display: grid;
+  gap: 8px;
+}
+
+.operatorField label,
+.operatorContext span {
+  color: var(--text-subtle);
+  font-size: 0.69rem;
+  font-weight: 600;
+}
+
+.operatorField select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 38px 0 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 610;
+}
+
+.operatorField select:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.operatorContext {
+  min-width: 0;
+  padding-left: 28px;
+  display: grid;
+  gap: 5px;
+  border-left: 1px solid var(--border);
+}
+
+.operatorContext strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.operatorContext p {
+  color: var(--text-muted);
+  font-size: 0.77rem;
+  line-height: 1.45;
+}
+
 .summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(120px, 1fr)) auto;
@@ -129,7 +195,8 @@
 
 .refreshButton,
 .primaryButton,
-.statusButton {
+.statusButton,
+.assignmentButton {
   min-height: 42px;
   border: 1px solid transparent;
   border-radius: 9px;
@@ -155,20 +222,27 @@
 }
 
 .refreshButton:hover:not(:disabled),
-.statusButton:hover:not(:disabled) {
+.statusButton:hover:not(:disabled),
+.assignmentButton:hover:not(:disabled) {
   border-color: var(--accent);
   color: var(--accent);
 }
 
 .refreshButton:active:not(:disabled),
 .primaryButton:active:not(:disabled),
-.statusButton:active:not(:disabled) {
+.statusButton:active:not(:disabled),
+.assignmentButton:active:not(:disabled) {
   transform: translateY(1px);
 }
 
 .refreshButton:disabled,
 .statusButton:disabled {
   cursor: wait;
+  opacity: 0.58;
+}
+
+.assignmentButton:disabled {
+  cursor: not-allowed;
   opacity: 0.58;
 }
 
@@ -311,6 +385,38 @@
   color: var(--text);
 }
 
+.actionGroup {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.assignmentButton {
+  min-width: 108px;
+  padding: 0 15px;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.assignmentButton:hover:not(:disabled) {
+  background: var(--accent-hover);
+  color: var(--accent-text);
+}
+
+.assignmentButton[data-action="release"] {
+  border-color: var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.assignmentButton[data-action="release"]:hover:not(:disabled) {
+  border-color: var(--error-border);
+  background: var(--error-surface);
+  color: var(--error-text);
+}
+
 .statePanel {
   padding: 56px 28px;
   border: 1px solid var(--border);
@@ -403,6 +509,17 @@
 }
 
 @media (max-width: 800px) {
+  .operatorPanel {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .operatorContext {
+    padding: 18px 0 0;
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+
   .summary {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -427,7 +544,7 @@
     grid-row: 2;
   }
 
-  .statusButton {
+  .actionGroup {
     grid-column: 2;
     grid-row: 1;
   }
@@ -488,17 +605,23 @@
     gap: 16px;
   }
 
-  .statusButton {
+  .actionGroup {
     grid-column: 1;
     grid-row: auto;
     width: 100%;
+  }
+
+  .statusButton,
+  .assignmentButton {
+    flex: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .refreshButton,
   .primaryButton,
-  .statusButton {
+  .statusButton,
+  .assignmentButton {
     transition: none;
   }
 
