@@ -158,15 +158,17 @@ npm run build
 npm run test:e2e --workspace @fleet/api
 ```
 
-The focused assignment service tests cover the atomic takeover filter, offline
-rejection, unique-index conflict mapping, and owner-only release. The HTTP
-integration test uses the running MongoDB container.
+Focused unit tests cover vehicle assignment filters, offline and delete
+guards, unique-index conflict mapping, and the frontend action-policy matrix.
+HTTP e2e tests run against an isolated MongoDB database and verify takeover,
+release, assigned-to-offline rejection, concurrent same-operator races, and
+the documented error envelope.
 
-At the time of implementation, `npm audit` reports two moderate entries for
-the same PostCSS advisory through the latest stable Next.js release. npm's
-suggested automatic fix is an unsafe major downgrade of Next.js. There are no
-high or critical findings, so the supported framework version is retained
-until an upstream stable release updates its pinned PostCSS dependency.
+At the time of implementation, `npm audit` reports transitive advisories in
+dependencies pinned by the latest stable Next.js release (PostCSS and sharp).
+npm's suggested automatic fix is an unsafe major downgrade of Next.js, so the
+supported framework version is retained until upstream publishes a patched
+stable release.
 
 ## Decisions and future growth
 
@@ -175,6 +177,8 @@ until an upstream stable release updates its pinned PostCSS dependency.
 - Vehicle and operator codes are unique stable identifiers, while MongoDB IDs
   are used in API paths and relationships.
 - Deleting an assigned vehicle is rejected instead of implicitly releasing it.
+- Vehicle writes, including assignment transitions, live in `VehiclesService`.
+  `AssignmentsService` only resolves the operator and delegates.
 - The API returns direct resource objects and a consistent error object rather
   than adding an envelope that this small service does not need.
 
