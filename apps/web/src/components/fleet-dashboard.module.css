@@ -435,6 +435,12 @@
   }
 }
 
+@media (min-width: 801px) {
+  .actionGroup {
+    flex-direction: column;
+  }
+}
+
 @media (max-width: 800px) {
   .operatorPanel {
     grid-template-columns: 1fr;
