@@ -24,8 +24,8 @@ export default function Home() {
           <p className={styles.kicker}>Fleet overview</p>
           <h1>Vehicle control</h1>
           <p>
-            Monitor vehicle availability and update connectivity across the
-            fleet.
+            Monitor vehicle availability, update connectivity, and select an
+            operator to take over or release vehicles.
           </p>
         </div>
         <FleetDashboard />

@@ -14,7 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Remote Fleet Control",
-  description: "Monitor and update vehicle connectivity across the fleet.",
+  description:
+    "Monitor vehicle connectivity and manage remote operator assignments.",
 };
 
 export default function RootLayout({
