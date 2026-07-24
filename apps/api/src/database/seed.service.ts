@@ -1,4 +1,5 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Operator } from '../operators/schemas/operator.schema';
@@ -20,6 +21,7 @@ const VEHICLES = [
 @Injectable()
 export class SeedService implements OnApplicationBootstrap {
   constructor(
+    private readonly config: ConfigService,
     @InjectModel(Operator.name)
     private readonly operatorModel: Model<Operator>,
     @InjectModel(Vehicle.name)
@@ -27,6 +29,10 @@ export class SeedService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
+    if (this.config.get<string>('SEED_ENABLED') === 'false') {
+      return;
+    }
+
     await Promise.all(
       OPERATORS.map((operator) =>
         this.operatorModel
